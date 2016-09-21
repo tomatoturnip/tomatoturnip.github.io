@@ -1,0 +1,11 @@
+.skills li {
+  list-style: none;
+}
+
+.heading3, p {
+  margin: 0 0 0 0;
+}
+
+.occupation-title {
+  color: #b8bbac;
+}
