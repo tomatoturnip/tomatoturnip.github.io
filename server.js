@@ -15,6 +15,7 @@ function getConnection () {
     host: config.MYSQL_HOST,
     user: config.MYSQL_USER,
     password: config.MYSQL_PASSWORD,
+    socketPath: config.MYSQL_SOCKET_PATH,
     database: config.MYSQL_DATABASE
   });
 }
