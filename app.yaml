@@ -1,4 +1,4 @@
 runtime: nodejs
 vm: true
+env_variables:
 beta_settings:
-      cloud_sql_instances: config.MYSQL_SOCKET_PATH

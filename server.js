@@ -1,40 +1,34 @@
+var dotenv = require('dotenv');
+dotenv.load();
 var port = process.env.PORT || 8080;
 var express = require("express");
 var app = express();
 var bodyParser = require("body-parser");
-var mysql = require("mysql");
-var config = require("./config.json");
+var nodemailer = require('nodemailer');
+var session = require("express-session");
+var cookieParser = require("cookie-parser");
+var flash = require("connect-flash");
+var transporter = nodemailer.createTransport({
+  service: 'gmail',
+  host: 'smtp.gmail.com',
+  auth: {
+    user: process.env.EMAIL,
+    pass: process.env.EMAIL_PASSWORD
+  }
+});
 
-app.use(express.static(__dirname))
+app.use(express.static(__dirname));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-//connect to google cloud sql
-function getConnection () {
-  return mysql.createConnection({
-    host: config.MYSQL_HOST,
-    user: config.MYSQL_USER,
-    password: config.MYSQL_PASSWORD,
-    socketPath: config.MYSQL_SOCKET_PATH,
-    database: config.MYSQL_DATABASE
-  });
-}
-
-function createContact (data, cb) {
-  var connection = getConnection();
-  connection.connect();
-  connection.query('INSERT INTO contacts SET ?', data, function (err, result) {
-    if(err) {
-      console.error("error connection: " + err.stack);
-      throw err;
-    }
-  });
-  connection.end(function(err) {
-    if(err) {
-      console.error("Error ending connection: " + err);
-    }
-  });
-}
+app.use(cookieParser('keyboard cat'));
+app.use(session({
+    secret: 'keyboard cat',
+    cookie: { maxAge: 60000 },
+    resave: false,    // forces the session to be saved back to the store
+    saveUninitialized: false  // dont save unmodified
+}));
+app.use(flash());
 
 // routes
 app.get("/", function(req, res){
@@ -43,9 +37,26 @@ app.get("/", function(req, res){
 
 app.post("/contact", function(req, res, next) {
   var data = req.body;
-  createContact(data, function (err) {
-    if (err) {
-      return next(err);
+  var mailOptions = {
+    from: data.email,
+    to: process.env.EMAIL,
+    subject: data.name + " from " + data.email,
+    text: data.message
+  };
+
+  transporter.sendMail(mailOptions, function(error, info) {
+    // Email not sent
+    if(error) {
+      // Log message that there was an error sending email
+      console.log(error);
+      // show flash message that email was not sent
+      req.flash("info", "There was an error sending your email: " + error)
+    } else {
+      // Log message that email sent
+        console.log("Message %s sent: %s", info.messageId, info.response);
+      // show flash message that email was sent
+        req.flash("info", "Your email was successfully sent!");
+
     }
   });
   res.redirect(req.baseUrl + '/');
